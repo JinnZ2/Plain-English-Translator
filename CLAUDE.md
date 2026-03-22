@@ -4,89 +4,128 @@
 
 Plain English Translator is a Python tool that converts complex medical, legal, insurance, and financial jargon into plain, understandable language. It processes documents locally (no data leaves the user's machine) and outputs translated results with red flags, rights, action items, and confidence scores.
 
-**Status**: Beta (v1.0.0) — core implementation exists in `PDF_support.md` as reference code but has not yet been extracted into a working `translator.py` module.
+**Version**: 1.0.0 (Beta)
+**License**: MIT
 
 ## Repository Structure
 
 ```
 Plain-English-Translator/
-├── README.md                 # Project documentation and usage guide
-├── CONTRIBUTING.md           # Contribution guidelines (terms, patterns, red flags)
-├── LICENSE                   # MIT License
-├── Requirements.txt          # Runtime Python dependencies
-├── setup.py                  # Package config (setuptools), entry points, dev deps
-├── PDF_support.md            # Full implementation reference (~1161 lines of Python code)
-├── batch_translate.py        # CLI batch processing tool (imports from translator module)
+├── translator.py              # Core module: EnhancedPlainEnglishTranslator class + CLI
+├── batch_translate.py         # CLI tool for batch processing multiple documents
+├── setup.py                   # Package config (setuptools), entry points, dev deps
+├── requirements.txt           # Runtime Python dependencies
+├── README.md                  # Project documentation and usage guide
+├── CONTRIBUTING.md            # Contribution guidelines (terms, patterns, red flags)
+├── LICENSE                    # MIT License
+├── PDF_support.md             # Implementation reference/design document
+├── .gitignore                 # Git ignore rules
 ├── examples/
-│   ├── README.md             # Example documentation
-│   └── medical_example.py    # Sample medical document translation
-└── .gothub/ISSUE_TEMPLATE/
+│   ├── README.md              # Example documentation
+│   └── medical_example.py     # Sample medical discharge summary translation
+└── .github/ISSUE_TEMPLATE/
     ├── bug_report.md
     └── feature_request.md
 ```
 
 ## Key Architecture
 
-### Core Classes (defined in PDF_support.md)
+### Core Module: `translator.py`
 
 - **`TranslationResult`** — Dataclass holding: `original_text`, `plain_english`, `key_points`, `action_items`, `red_flags`, `your_rights`, `confidence_score`, `document_type`, `source_file`
-- **`EnhancedPlainEnglishTranslator`** — Main engine with jargon dictionaries, document pattern matching, red flag detection, rights identification, and multi-format file support (PDF, DOCX, TXT)
+- **`EnhancedPlainEnglishTranslator`** — Main engine with:
+  - Jargon dictionaries for 4 domains (medical, legal, insurance, financial)
+  - Document type auto-detection via keyword scoring
+  - Red flag detection using phrase matching
+  - Sneaky clause detection using regex patterns
+  - Rights identification
+  - Action item generation
+  - Confidence scoring
+  - Multi-format file support (PDF via PyMuPDF/PyPDF2, DOCX, TXT)
+  - HTML report generation via `save_translation()`
+- **`PlainEnglishTranslator`** — Alias for `EnhancedPlainEnglishTranslator` (backwards compatibility)
 
 ### Entry Points (from setup.py)
 
 - `plain-english-translator` → `translator:main`
 - `pet` → `translator:main` (short alias)
 
-### Important Note
+### Key Methods
 
-The `translator` module referenced by `batch_translate.py`, `examples/medical_example.py`, and `setup.py` entry points **does not exist as a file yet**. The implementation lives in `PDF_support.md` and needs to be extracted into a proper Python module.
+- `translate_document(text)` — Translate raw text string
+- `translate_document_from_file(file_path)` — Translate from a file (PDF/DOCX/TXT)
+- `save_translation(result, output_name)` — Save result as HTML to `translations/` directory
 
 ## Development Setup
 
 ```bash
 # Python 3.7+ required
-pip install -r Requirements.txt
+pip install -r requirements.txt
 
-# Dev dependencies (defined in setup.py extras_require)
-pip install pytest black flake8 pytest-cov
+# Dev dependencies
+pip install -e ".[dev]"
+```
+
+## Running
+
+```bash
+# Translate a single document
+python translator.py document.txt
+python translator.py document.pdf -o output-name
+
+# Batch translate
+python batch_translate.py "documents/*.txt"
+
+# Run example
+python examples/medical_example.py
 ```
 
 ## Dependencies
 
-Runtime: `requests`, `beautifulsoup4`, `pandas`, `PyPDF2`, `PyMuPDF`, `python-docx`, `openpyxl`
+**Runtime**: `requests`, `beautifulsoup4`, `pandas`, `PyPDF2`, `PyMuPDF`, `python-docx`, `openpyxl`
 
-Dev: `pytest`, `black`, `flake8`, `pytest-cov`
+**Dev**: `pytest`, `black`, `flake8`, `pytest-cov`
 
 ## Code Conventions
 
 - **Python 3.7+** compatibility required
 - Use **type hints** for function signatures
-- Include **docstrings** for all public functions
+- Include **docstrings** for all public methods
 - Use **clear variable naming** — no abbreviations for domain-specific terms
-- Emoji indicators in user-facing output: ⚠️ (red flags), ✅ (rights/success), 📋 (action items)
-- Formatting tools: **black** for code formatting, **flake8** for linting
+- Emoji indicators in user-facing CLI output: ⚠️ (red flags), ✅ (rights/success), 📋 (action items), 🚨 (sneaky clauses)
+- Formatting: **black** for code formatting, **flake8** for linting
+- Private methods prefixed with `_` (e.g., `_load_jargon_dictionary`)
 
 ## Testing
 
-No test suite exists yet. Dev dependencies specify `pytest` and `pytest-cov`. When tests are added, they should go in a `tests/` directory and be runnable via:
+Tests should go in a `tests/` directory and be runnable via:
 
 ```bash
 pytest
+pytest --cov=translator
 ```
 
-## Document Types Supported
+## Adding Content
 
-Medical, legal, insurance, and financial documents. Each type has its own:
-- Jargon dictionary (term → plain English mapping)
-- Red flag patterns (regex-based detection of predatory/concerning clauses)
-- Rights indicators (what the user is entitled to)
-- Sneaky clause detection patterns
+### New jargon terms
+Add to the appropriate domain dict in `translator.py`'s `_load_jargon_dictionary()`:
+```python
+'technical_term': 'plain English explanation',
+```
 
-## Contributing Conventions
+### New red flag patterns
+Add to the appropriate domain list in `_load_document_patterns()`:
+```python
+'problematic phrase to detect',
+```
 
-- New jargon terms follow the format: `"technical_term": "plain English explanation — What it actually means for you"`
-- Red flag patterns use regex and include both `pattern` and `meaning` fields
-- See `CONTRIBUTING.md` for detailed guidelines on adding medical terms, legal red flags, and insurance decoders
+### New sneaky clause regex patterns
+Add to the appropriate list in `_load_sneaky_patterns()`:
+```python
+r'regex.*pattern.*to.*match',
+```
+
+See `CONTRIBUTING.md` for full guidelines.
 
 ## Privacy
 

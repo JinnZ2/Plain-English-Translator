@@ -43,8 +43,8 @@ open translations/your-scary-document.html
 ## 🛠 Installation
 
 ```bash
-git clone https://github.com/yourusername/plain-english-translator.git
-cd plain-english-translator
+git clone https://github.com/JinnZ2/Plain-English-Translator.git
+cd Plain-English-Translator
 pip install -r requirements.txt
 ```
 
@@ -116,7 +116,7 @@ Before: "Party hereby waives any right to trial by jury and agrees to binding ar
 After: "⚠️ You give up your right to a jury trial and must use private arbitration instead (you can't sue in regular court)"
 ```
 
-## 🏥 Insurance Policies
+## 🛡️ Insurance Policies
 
 Decodes:
 
@@ -162,7 +162,7 @@ Have a document that got translated well (or poorly)? Add it to `/examples` with
 
 ## 🎯 Roadmap
 
-- [ ] **PDF support** - Direct PDF parsing
+- [x] **PDF support** - Direct PDF parsing
 - [ ] **Web interface** - Upload and translate online
 - [ ] **Mobile app** - Take photos of documents
 - [ ] **Real-time translation** - Browser extension

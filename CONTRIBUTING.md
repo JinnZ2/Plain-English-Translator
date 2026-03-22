@@ -9,7 +9,7 @@ Thank you for wanting to help make important documents understandable for everyo
 Medical jargon is constantly evolving. Help us translate more terms:
 
 ```python
-# In translator.py, find jargon_dictionary['medical'] and add:
+# In translator.py, find the medical section of _load_jargon_dictionary() and add:
 'your_medical_term': 'plain english explanation',
 ```
 
@@ -25,7 +25,7 @@ Medical jargon is constantly evolving. Help us translate more terms:
 Help us identify problematic legal language:
 
 ```python
-# In document_patterns['legal']['red_flag_phrases'], add:
+# In translator.py, find the legal red_flag_phrases list and add:
 'new predatory clause pattern',
 ```
 
@@ -41,7 +41,7 @@ Help us identify problematic legal language:
 Insurance companies love confusing language:
 
 ```python
-# Add to jargon_dictionary['insurance']:
+# In translator.py, find the insurance section of _load_jargon_dictionary() and add:
 'insurance_term': 'what it actually costs you',
 ```
 
