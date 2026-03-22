@@ -1,17 +1,17 @@
------
-
-## name: Feature Request
+---
+name: Feature Request
 about: Suggest an improvement or new feature
-title: ’[FEATURE] ’
+title: '[FEATURE] '
 labels: enhancement
-assignees: ‘’
+assignees: ''
+---
 
-## 💡 What Would Make This Better?
+## What Would Make This Better?
 
 **Feature description:**
-Clear description of what you’d like to see added or improved.
+Clear description of what you'd like to see added or improved.
 
-## 🎯 The Problem This Solves
+## The Problem This Solves
 
 **What frustrating situation would this help with?**
 Describe the real-world scenario where this feature would help people.
@@ -25,7 +25,7 @@ Describe the real-world scenario where this feature would help people.
 - [ ] Financial services customers
 - [ ] Other: _______________
 
-## 💭 How Should It Work?
+## How Should It Work?
 
 **Describe your ideal solution:**
 What would the user experience look like?
@@ -36,7 +36,7 @@ What would the user experience look like?
 Show how someone would use this feature
 ```
 
-## 📚 Document Types
+## Document Types
 
 **What types of documents would this help with?**
 
@@ -48,20 +48,20 @@ Show how someone would use this feature
 - [ ] Government forms
 - [ ] Other: _______________
 
-## 🔧 Technical Considerations
+## Technical Considerations
 
 **Any thoughts on implementation?**
 (Optional - but if you have ideas, share them!)
 
-## 📊 Priority Level
+## Priority Level
 
 **How important is this to you?**
 
-- [ ] Critical - I can’t use the tool without this
+- [ ] Critical - I can't use the tool without this
 - [ ] Important - Would make the tool much more useful
 - [ ] Nice to have - Would be a good addition
 
-## 📋 Additional Context
+## Additional Context
 
 **Anything else that would help us understand this request?**
 
@@ -69,6 +69,6 @@ Show how someone would use this feature
 - Similar tools that do this well
 - Specific jargon or concepts that need better handling
 
------
+---
 
-**Remember**: The best feature requests help us understand the real human problem you’re trying to solve!
+**Remember**: The best feature requests help us understand the real human problem you're trying to solve!
