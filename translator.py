@@ -7,11 +7,19 @@ Now handles PDFs directly and catches more sneaky clauses!
 import PyPDF2
 import fitz  # PyMuPDF - better PDF extraction
 import re
+import sys
 import argparse
+import json
 from dataclasses import dataclass, asdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pathlib import Path
 from docx import Document  # Word document support
+
+DISCLAIMER = (
+    "DISCLAIMER: This is an automated translation tool. It is NOT legal, medical, "
+    "financial, or professional advice. Always consult a qualified professional "
+    "before making decisions based on complex documents."
+)
 
 
 @dataclass
@@ -160,6 +168,37 @@ class EnhancedPlainEnglishTranslator:
                 'payment shock': 'when low payments suddenly become much higher',
                 'recourse debt': 'they can come after your other assets if you default',
                 'cross-collateralization': 'one asset secures multiple loans',
+            },
+            'government': {
+                # Benefits and assistance
+                'adjudication': 'the process of deciding your claim',
+                'beneficiary': 'person who receives benefits',
+                'determination': 'official decision on your eligibility',
+                'entitlement': 'benefits you have a legal right to receive',
+                'means-tested': 'eligibility depends on your income/assets',
+                'categorical eligibility': 'you qualify based on receiving other benefits',
+                'presumptive eligibility': 'temporary approval while full application is processed',
+                'redetermination': 'review to check if you still qualify',
+                'overpayment': 'they say they paid you too much and want money back',
+                'recoupment': 'they take back overpaid benefits from future payments',
+                'fair hearing': 'your right to challenge a decision before a judge',
+                'administrative law judge': 'judge who decides government benefit disputes',
+                'notice of action': 'letter telling you about changes to your benefits',
+                'good cause': 'acceptable reason for missing a deadline or requirement',
+                'enumeration': 'assigning a Social Security number',
+                'quarters of coverage': 'work credits needed for Social Security',
+                'full retirement age': 'age when you get full Social Security benefits',
+                'disability determination': 'decision about whether you qualify for disability benefits',
+                'substantial gainful activity': 'earning enough that they say you can work',
+                'federal poverty level': 'income threshold used to determine benefit eligibility',
+                'cost of living adjustment': 'yearly increase to keep up with inflation',
+                'supplemental security income': 'monthly payments for disabled/elderly with low income',
+                'medicaid': 'government health insurance for low-income individuals',
+                'medicare': 'government health insurance for people 65+ or with disabilities',
+                'snap': 'food assistance program (formerly food stamps)',
+                'tanf': 'temporary cash assistance for families with children',
+                'section 8': 'government help paying rent',
+                'wic': 'nutrition program for pregnant women, infants, and children',
             }
         }
 
@@ -231,6 +270,22 @@ class EnhancedPlainEnglishTranslator:
                     'right of rescission', 'truth in lending', 'fair credit reporting',
                     'dispute resolution', 'billing error rights', 'privacy rights'
                 ]
+            },
+            'government': {
+                'red_flag_phrases': [
+                    'overpayment', 'recoupment', 'benefits terminated',
+                    'benefits reduced', 'benefits suspended', 'ineligible',
+                    'disqualified', 'fraud', 'intentional program violation',
+                    'sanctions', 'penalty', 'must repay', 'wage garnishment',
+                    'failure to comply', 'benefits will stop', 'mandatory work requirement'
+                ],
+                'rights_indicators': [
+                    'fair hearing', 'right to appeal', 'notice of action',
+                    'good cause', 'free legal aid', 'legal services',
+                    'ombudsman', 'advocate', 'discrimination complaint',
+                    'reasonable accommodation', 'language access', 'interpreter',
+                    'continued benefits pending appeal', 'aid paid pending'
+                ]
             }
         }
 
@@ -262,6 +317,13 @@ class EnhancedPlainEnglishTranslator:
                 r'teaser.*rate.*(\d+\.\d+)%.*then.*(\d+\.\d+)%',
                 r'negative.*amortization',
                 r'universal.*default.*clause'
+            ],
+            'sneaky_government': [
+                r'failure.*to.*(?:report|comply|appear).*result.*in.*(?:termination|loss|reduction)',
+                r'overpayment.*must.*(?:repay|return)',
+                r'benefits.*(?:terminated|reduced|suspended).*without.*(?:notice|hearing)',
+                r'waive.*(?:right|hearing|appeal)',
+                r'(?:fraud|intentional).*program.*violation'
             ]
         }
 
@@ -330,7 +392,7 @@ class EnhancedPlainEnglishTranslator:
         """Detect sneaky clauses using regex patterns"""
         sneaky_clauses = []
 
-        if document_type in ['legal', 'insurance', 'financial']:
+        if document_type in ['legal', 'insurance', 'financial', 'government']:
             pattern_key = f'sneaky_{document_type}'
             if pattern_key in self.sneaky_patterns:
                 for pattern in self.sneaky_patterns[pattern_key]:
@@ -365,12 +427,18 @@ class EnhancedPlainEnglishTranslator:
             'loan', 'interest', 'payment', 'credit', 'debt', 'mortgage',
             'apr', 'finance', 'bank', 'borrower', 'lender', 'principal'
         ]
+        government_keywords = [
+            'benefits', 'eligibility', 'applicant', 'determination', 'federal',
+            'state', 'agency', 'social security', 'medicaid', 'medicare',
+            'snap', 'tanf', 'disability', 'supplemental'
+        ]
 
         scores = {
             'medical': sum(2 if word in text_lower else 0 for word in medical_keywords),
             'legal': sum(2 if word in text_lower else 0 for word in legal_keywords),
             'insurance': sum(2 if word in text_lower else 0 for word in insurance_keywords),
-            'financial': sum(2 if word in text_lower else 0 for word in financial_keywords)
+            'financial': sum(2 if word in text_lower else 0 for word in financial_keywords),
+            'government': sum(2 if word in text_lower else 0 for word in government_keywords)
         }
 
         # Bonus points for specific phrases
@@ -382,6 +450,12 @@ class EnhancedPlainEnglishTranslator:
             scores['medical'] += 5
         if 'loan agreement' in text_lower or 'credit card' in text_lower:
             scores['financial'] += 5
+        if 'notice of action' in text_lower or 'benefit determination' in text_lower:
+            scores['government'] += 5
+        if 'social security' in text_lower or 'food stamps' in text_lower:
+            scores['government'] += 5
+        if 'section 8' in text_lower or 'housing authority' in text_lower:
+            scores['government'] += 5
 
         return max(scores, key=scores.get) if max(scores.values()) > 0 else 'general'
 
@@ -516,26 +590,161 @@ class EnhancedPlainEnglishTranslator:
             actions.append("⚖️ Consider having a lawyer review this before signing")
             actions.append("📋 Keep a copy of all documents")
 
+        elif document_type == 'government':
+            actions.append("📋 Save this notice and note any deadlines")
+            actions.append("📞 Call the agency if anything is unclear - use the number on the notice")
+            if re.search(r'\bappeal\b', text, re.IGNORECASE):
+                actions.append("⚖️ You may have the right to appeal - check deadlines carefully")
+            if re.search(r'\boverpayment\b', text, re.IGNORECASE):
+                actions.append("💰 If they say you were overpaid, you can request a waiver")
+            if re.search(r'\bhearing\b', text, re.IGNORECASE):
+                actions.append("⚖️ You have the right to a fair hearing - consider getting free legal help")
+
         return actions
 
     def calculate_confidence(self, text: str, document_type: str) -> float:
-        """Calculate how confident we are in the translation"""
-        base_score = 0.7
+        """Calculate how confident we are in the translation.
 
-        # Penalize very long documents
-        if len(text) > 10000:
-            base_score -= 0.1
+        Factors:
+        - Did we recognize the document type?
+        - How many jargon terms did we successfully translate?
+        - How much unknown jargon (uppercase abbreviations) remains?
+        - Document length (very long docs may have untranslated sections)
+        - Presence of complex structures we can't parse well (tables, formulas)
+        """
+        score = 0.0
 
-        # Boost score if we recognized the document type
+        # Document type recognition (0-0.25)
         if document_type != 'general':
-            base_score += 0.2
+            score += 0.25
+        else:
+            score += 0.05
 
-        # Penalize if lots of unknown jargon remains
-        jargon_count = len(re.findall(r'\b[A-Z]{3,}\b', text))
-        if jargon_count > 10:
-            base_score -= 0.1
+        # Jargon coverage: what fraction of known terms did we find? (0-0.35)
+        if document_type in self.jargon_dictionary:
+            text_lower = text.lower()
+            domain_terms = self.jargon_dictionary[document_type]
+            found = sum(1 for term in domain_terms if term in text_lower)
+            total = len(domain_terms)
+            if total > 0:
+                coverage = found / total
+                # Higher coverage = we understand more of this document
+                score += 0.35 * min(coverage * 5, 1.0)  # cap at 1.0
+        else:
+            score += 0.05
 
-        return max(0.1, min(0.95, base_score))
+        # Unknown jargon penalty (0-0.2, starts at 0.2 and decreases)
+        unknown_abbrevs = len(re.findall(r'\b[A-Z]{3,}\b', text))
+        if unknown_abbrevs <= 3:
+            score += 0.2
+        elif unknown_abbrevs <= 10:
+            score += 0.1
+        # else: no bonus
+
+        # Length factor (0-0.1)
+        text_len = len(text)
+        if text_len < 500:
+            score += 0.05  # very short, might miss context
+        elif text_len < 5000:
+            score += 0.1   # good length
+        elif text_len < 15000:
+            score += 0.07  # getting long
+        else:
+            score += 0.02  # very long, likely missed things
+
+        # Structural complexity penalty (0-0.1, starts at 0.1)
+        has_tables = bool(re.search(r'\t.*\t.*\t', text))
+        has_formulas = bool(re.search(r'[=<>]{2,}|[\$€£]\d+.*[\+\-\*\/]', text))
+        structural_score = 0.1
+        if has_tables:
+            structural_score -= 0.05
+        if has_formulas:
+            structural_score -= 0.03
+        score += structural_score
+
+        return round(max(0.1, min(0.95, score)), 2)
+
+    def translate_side_by_side(self, text: str, document_type: Optional[str] = None) -> List[Dict[str, str]]:
+        """Return sentence-level side-by-side: original vs plain English.
+
+        Returns a list of dicts with 'original' and 'plain' keys.
+        """
+        if document_type is None:
+            document_type = self.detect_document_type(text)
+
+        # Split into sentences
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        pairs = []
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) < 10:
+                continue
+            plain = self.translate_jargon(sentence, document_type)
+            # Only include if translation actually changed something
+            pairs.append({
+                'original': sentence,
+                'plain': plain
+            })
+        return pairs
+
+    def translate_to_spanish(self, result: TranslationResult) -> Dict[str, str]:
+        """Provide basic Spanish plain-language equivalents for common output phrases.
+
+        This uses a local lookup table for common terms — no external API needed.
+        Returns a dict with Spanish versions of key output sections.
+        """
+        spanish_terms = {
+            # Red flag labels
+            'RED FLAGS FOUND': 'SEÑALES DE ALERTA',
+            'SNEAKY CLAUSE': 'CLÁUSULA ENGAÑOSA',
+            # Action items
+            'Important deadline': 'Fecha límite importante',
+            'Ask your doctor about all side effects': 'Pregúntele a su médico sobre los efectos secundarios',
+            'Ask about alternative treatment options': 'Pregunte sobre opciones de tratamiento alternativas',
+            'Save the customer service number': 'Guarde el número de servicio al cliente',
+            'Understand your deductible': 'Entienda su deducible',
+            'Consider having a lawyer review this': 'Considere que un abogado revise esto',
+            'Keep a copy of all documents': 'Guarde una copia de todos los documentos',
+            'Save this notice and note any deadlines': 'Guarde este aviso y anote las fechas límite',
+            'Call the agency if anything is unclear': 'Llame a la agencia si algo no está claro',
+            'You may have the right to appeal': 'Usted puede tener derecho a apelar',
+            # Document types
+            'Medical': 'Médico',
+            'Legal': 'Legal',
+            'Insurance': 'Seguro',
+            'Financial': 'Financiero',
+            'Government': 'Gobierno',
+            'General': 'General',
+            # Section headers
+            'Your Rights': 'Sus Derechos',
+            'Action Items': 'Acciones a Tomar',
+            'Key Points': 'Puntos Clave',
+            'Plain English Version': 'Versión en Lenguaje Simple',
+        }
+
+        # Translate the plain english text using domain jargon → Spanish simple terms
+        spanish_jargon = {
+            'heart attack': 'ataque al corazón',
+            'stroke': 'derrame cerebral',
+            'high blood pressure': 'presión arterial alta',
+            'trouble breathing': 'dificultad para respirar',
+            'you give up your right to sue': 'usted renuncia a su derecho de demandar',
+            'you pay before insurance kicks in': 'lo que usted paga antes de que el seguro cubra',
+            'monthly payment for coverage': 'pago mensual por cobertura',
+            'interest rate can go up': 'la tasa de interés puede subir',
+        }
+
+        output = {
+            'document_type': spanish_terms.get(result.document_type.title(), result.document_type),
+            'disclaimer': (
+                "AVISO: Esta es una herramienta de traducción automatizada. NO es consejo "
+                "legal, médico, financiero ni profesional. Siempre consulte a un profesional "
+                "calificado antes de tomar decisiones basadas en documentos complejos."
+            ),
+            'section_headers': spanish_terms,
+            'spanish_jargon': spanish_jargon,
+        }
+        return output
 
     def save_translation(self, result: TranslationResult, output_name: str):
         """Save translation result as an HTML report"""
@@ -595,7 +804,10 @@ class EnhancedPlainEnglishTranslator:
     <div class="plain-english">{result.plain_english}</div>
 
     <hr>
-    <p><em>Generated by Plain English Translator. This is not legal or medical advice.</em></p>
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin-top: 20px;">
+        <strong>⚠️ {DISCLAIMER}</strong>
+    </div>
+    <p><em>Generated by Plain English Translator.</em></p>
 </body>
 </html>"""
 
@@ -608,43 +820,201 @@ class EnhancedPlainEnglishTranslator:
 PlainEnglishTranslator = EnhancedPlainEnglishTranslator
 
 
+def _try_ollama_enhance(text: str, document_type: str) -> Optional[str]:
+    """Try to enhance translation using a local Ollama LLM. Returns None if unavailable."""
+    try:
+        import urllib.request
+        import urllib.error
+
+        prompt = (
+            f"You are a plain-language translator. The following is a {document_type} document. "
+            f"Rewrite it in simple, clear English that anyone can understand. "
+            f"Keep all important details but remove jargon.\n\n{text[:3000]}"
+        )
+
+        data = json.dumps({
+            "model": "llama3.2",
+            "prompt": prompt,
+            "stream": False
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            "http://localhost:11434/api/generate",
+            data=data,
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+            return result.get("response", None)
+    except Exception:
+        return None
+
+
+def _print_result(result: TranslationResult, side_by_side: bool = False,
+                  spanish: bool = False, use_ollama: bool = False):
+    """Print a full translation result to terminal."""
+    translator = EnhancedPlainEnglishTranslator()
+
+    print(f"\n{'=' * 70}")
+    print(f"📊 Document Type: {result.document_type.title()}")
+    print(f"📊 Translation Confidence: {result.confidence_score:.0%}")
+    print(f"{'=' * 70}")
+
+    # Always show disclaimer first
+    print(f"\n⚠️  {DISCLAIMER}\n")
+
+    # Red flags first — most important
+    if result.red_flags:
+        print(f"🚨 RED FLAGS FOUND ({len(result.red_flags)}):")
+        for flag in result.red_flags:
+            print(f"   {flag}")
+        print()
+
+    # Your rights
+    if result.your_rights:
+        print(f"✅ YOUR RIGHTS ({len(result.your_rights)}):")
+        for right in result.your_rights:
+            print(f"   {right}")
+        print()
+
+    # Action items
+    if result.action_items:
+        print(f"📋 ACTION ITEMS ({len(result.action_items)}):")
+        for action in result.action_items:
+            print(f"   {action}")
+        print()
+
+    # Key points
+    if result.key_points:
+        print(f"🔑 KEY POINTS ({len(result.key_points)}):")
+        for point in result.key_points:
+            print(f"   • {point}")
+        print()
+
+    # Side-by-side mode
+    if side_by_side:
+        print("📖 SIDE-BY-SIDE TRANSLATION:")
+        print("-" * 70)
+        pairs = translator.translate_side_by_side(result.original_text, result.document_type)
+        for i, pair in enumerate(pairs, 1):
+            if pair['original'] != pair['plain']:
+                print(f"  ORIGINAL:  {pair['original'][:200]}")
+                print(f"  PLAIN:     {pair['plain'][:200]}")
+                print()
+        print()
+    else:
+        # Print the full plain English translation
+        print("📝 PLAIN ENGLISH TRANSLATION:")
+        print("-" * 70)
+        print(result.plain_english[:5000])
+        if len(result.plain_english) > 5000:
+            print(f"\n... ({len(result.plain_english) - 5000} more characters in full report)")
+        print()
+
+    # Ollama enhanced version
+    if use_ollama:
+        print("🤖 Checking for local LLM (Ollama)...")
+        enhanced = _try_ollama_enhance(result.original_text, result.document_type)
+        if enhanced:
+            print("🤖 LLM-ENHANCED TRANSLATION:")
+            print("-" * 70)
+            print(enhanced[:5000])
+            print()
+        else:
+            print("   Ollama not available. Install from https://ollama.com and run: ollama pull llama3.2")
+            print()
+
+    # Spanish output
+    if spanish:
+        spanish_info = translator.translate_to_spanish(result)
+        print(f"🇪🇸 TIPO DE DOCUMENTO: {spanish_info['document_type']}")
+        print(f"⚠️  {spanish_info['disclaimer']}")
+        print()
+
+    # Final disclaimer
+    print("-" * 70)
+    print(f"⚠️  {DISCLAIMER}")
+
+
 def main():
     """Command line interface"""
     parser = argparse.ArgumentParser(
         description='Translate complex documents into plain English (supports PDF, DOCX, TXT)'
     )
-    parser.add_argument('file', help='Path to document file (PDF, DOCX, or TXT)')
+    parser.add_argument('file', nargs='?', help='Path to document file (PDF, DOCX, or TXT)')
     parser.add_argument('--output', '-o', help='Output filename (without extension)')
     parser.add_argument('--show-sneaky', '-s', action='store_true', help='Highlight sneaky clauses')
+    parser.add_argument('--side-by-side', '-sbs', action='store_true',
+                        help='Show sentence-by-sentence original vs plain English')
+    parser.add_argument('--spanish', '-es', action='store_true',
+                        help='Include Spanish plain-language output')
+    parser.add_argument('--ollama', action='store_true',
+                        help='Use local Ollama LLM for enhanced translation')
+    parser.add_argument('--json', action='store_true',
+                        help='Output result as JSON')
 
     args = parser.parse_args()
 
     translator = EnhancedPlainEnglishTranslator()
 
+    # Interactive mode: no file argument
+    if args.file is None:
+        print("=" * 70)
+        print("📝 Plain English Translator — Interactive Mode")
+        print("=" * 70)
+        print(f"\n⚠️  {DISCLAIMER}\n")
+        print("Paste or type your document text below.")
+        print("When done, press Enter on an empty line (or Ctrl+D / Ctrl+Z).\n")
+
+        lines = []
+        try:
+            while True:
+                line = input()
+                if line == '' and lines:
+                    break
+                lines.append(line)
+        except EOFError:
+            pass
+
+        text = '\n'.join(lines)
+        if len(text.strip()) < 50:
+            print("❌ Text too short. Please provide at least a few sentences.")
+            sys.exit(1)
+
+        result = translator.translate_document(text)
+        _print_result(result, side_by_side=args.side_by_side,
+                      spanish=args.spanish, use_ollama=args.ollama)
+
+        if args.json:
+            print("\n📄 JSON OUTPUT:")
+            output = asdict(result)
+            output.pop('original_text')  # don't dump the full original
+            print(json.dumps(output, indent=2))
+
+        return
+
+    # File mode
     try:
         print(f"📄 Processing: {args.file}")
         result = translator.translate_document_from_file(args.file)
 
-        print(f"📊 Document Type: {result.document_type.title()}")
-        print(f"📊 Translation Confidence: {result.confidence_score:.0%}")
+        if args.json:
+            output = asdict(result)
+            output.pop('original_text')
+            print(json.dumps(output, indent=2))
+            return
 
-        if result.red_flags:
-            print(f"\n🚨 RED FLAGS FOUND ({len(result.red_flags)}):")
-            for flag in result.red_flags[:5]:
-                print(f"   {flag}")
-
-        if result.action_items:
-            print(f"\n📋 ACTION ITEMS ({len(result.action_items)}):")
-            for action in result.action_items:
-                print(f"   {action}")
+        _print_result(result, side_by_side=args.side_by_side,
+                      spanish=args.spanish, use_ollama=args.ollama)
 
         output_name = args.output or Path(args.file).stem
         translator.save_translation(result, output_name)
-        print(f"\n💾 Full report: translations/{output_name}.html")
+        print(f"💾 Full report: translations/{output_name}.html")
 
     except Exception as e:
         print(f"❌ Error: {e}")
         print("Make sure the file exists and is a supported format (PDF, DOCX, TXT)")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
