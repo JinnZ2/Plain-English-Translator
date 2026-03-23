@@ -746,6 +746,180 @@ class EnhancedPlainEnglishTranslator:
         }
         return output
 
+    def translate_to_ojibwe(self, result: TranslationResult) -> Dict[str, str]:
+        """Provide Ojibwe (Anishinaabemowin) plain-language equivalents for key output terms.
+
+        Ojibwe is spoken across the Great Lakes region by Anishinaabe peoples.
+        This uses a local lookup table — no external API needed.
+        Note: These are common/standardized forms; regional dialects vary.
+        """
+        ojibwe_terms = {
+            # Section headers
+            'Red Flags': 'Naniizaanizi Mazina\'iganan',  # Danger signs
+            'Your Rights': 'Gidakiiwinan',  # Your rights/entitlements
+            'Action Items': 'Ge-izhichigeng',  # Things to do
+            'Key Points': 'Gichi-ina\'oonwewinan',  # Important points
+            'Plain English Version': 'Weweni Zhibii\'igaadeg',  # Written clearly
+            # Document types
+            'Medical': 'Mashkiki',  # Medicine
+            'Legal': 'Inaakonige',  # Law/legal
+            'Insurance': 'Aazhogan Mazina\'igan',  # Protection paper
+            'Financial': 'Zhooniyaa',  # Money
+            'Government': 'Ogimaawiwin',  # Government/leadership
+            'General': 'Maamawi',  # General/together
+        }
+
+        # Key medical/legal/financial concepts in Ojibwe
+        ojibwe_concepts = {
+            'heart attack': 'ode\' aakozi',  # heart sickness
+            'high blood pressure': 'ishpagonagizi miskwi',  # blood is high
+            'hospital': 'aakoziwigamig',  # sick-house
+            'medicine': 'mashkiki',
+            'doctor': 'mashkikiiwinini',  # medicine person
+            'money': 'zhooniyaa',
+            'help': 'wiidookaazowin',
+            'rights': 'akiiwinan',
+            'danger': 'naniizaanad',
+            'warning': 'aanjimaajitoon',
+            'family': 'niijaanisag',
+            'food': 'miijim',
+            'home': 'endaayan',  # where you live
+            'water': 'nibi',
+            'children': 'abinoojiinyag',
+        }
+
+        output = {
+            'language_name': 'Anishinaabemowin (Ojibwe)',
+            'document_type': ojibwe_terms.get(result.document_type.title(), result.document_type),
+            'disclaimer': (
+                "AANIIN: Maanda mazina'igan wii-wiidookaagoyin ji-nisidotaman. "
+                "Gaawiin dash inaakonige-wiidookaagewiniwi, gaawiin mashkiki-wiidookaagewiniwi. "
+                "Gagwejim awiiya ge-wiidookook."
+                # Translation: This document is to help you understand.
+                # It is not legal advice, it is not medical advice.
+                # Ask someone who can help you.
+            ),
+            'section_headers': ojibwe_terms,
+            'concepts': ojibwe_concepts,
+        }
+        return output
+
+    def translate_to_navajo(self, result: TranslationResult) -> Dict[str, str]:
+        """Provide Navajo (Diné Bizaad) plain-language equivalents for key output terms.
+
+        Navajo is spoken by the Diné people, primarily in the Navajo Nation
+        (Arizona, New Mexico, Utah). This uses a local lookup table.
+        """
+        navajo_terms = {
+            # Section headers
+            'Red Flags': "Báhádzidígíí",  # Dangerous things
+            'Your Rights': "Bee baa áhólníigíí",  # What you are entitled to
+            'Action Items': "Ída'iinííłaago baa ntsáhákees",  # Things to think about doing
+            'Key Points': "T'áá bí ałchíní bee haz'ą́ą́ dóó baa áhólyáago",  # Important things
+            'Plain English Version': "Saad bee yá'át'ééhígo bik'ehgo",  # In good/clear words
+            # Document types
+            'Medical': "Azee'",  # Medicine
+            'Legal': "Beehaz'áanii",  # Law
+            'Insurance': "Bee ná'ádleehígíí",  # Protection/coverage
+            'Financial': "Béeso",  # Money
+            'Government': "Wáshindoon",  # Washington/Government
+            'General': "T'áá altso",  # All/general
+        }
+
+        navajo_concepts = {
+            'heart attack': "ajéí bidziil nááná'áłtso",  # heart becomes very ill
+            'high blood pressure': "dił yílchíhígíí",  # blood pushes hard
+            'hospital': "azee' ál'íní",  # place where medicine is made
+            'medicine': "azee'",
+            'doctor': "azee' ííł'íní",  # one who makes medicine
+            'money': "béeso",
+            'help': "shíká a'doolwołígíí",  # help for me
+            'rights': "bee baa áhólníigíí",
+            'danger': "báhádzidígíí",
+            'warning': "yee'iidzaago",
+            'family': "k'é",  # kinship/family
+            'food': "ch'iyáán",
+            'home': "hooghan",  # hogan/home
+            'water': "tó",
+            'children': "áłchíní",
+        }
+
+        output = {
+            'language_name': 'Diné Bizaad (Navajo)',
+            'document_type': navajo_terms.get(result.document_type.title(), result.document_type),
+            'disclaimer': (
+                "DÍÍ NAALTSOOS: Díí naaltsoos saad bee yá'át'ééhígo bee na'ídíkid. "
+                "Doo beehaz'áanii bik'ehgo yá'adaat'éhígíí át'é da, "
+                "doo azee' bik'ehgo yá'adaat'éhígíí át'é da. "
+                "Níká'adoolwołígíí bił yíníłta'."
+                # Translation: This document explains in clear words.
+                # It is not legal advice, it is not medical advice.
+                # Read it with someone who can help you.
+            ),
+            'section_headers': navajo_terms,
+            'concepts': navajo_concepts,
+        }
+        return output
+
+    def translate_to_cherokee(self, result: TranslationResult) -> Dict[str, str]:
+        """Provide Cherokee (ᏣᎳᎩ ᎦᏬᏂᎯᏍᏗ / Tsalagi Gawonihisdi) plain-language
+        equivalents for key output terms.
+
+        Cherokee is spoken by the Cherokee Nation and Eastern Band of Cherokee Indians.
+        Cherokee has its own syllabary (ᏣᎳᎩ ᎤᏪᏍᏓ) created by Sequoyah.
+        This uses a local lookup table with both syllabary and transliteration.
+        """
+        cherokee_terms = {
+            # Section headers (syllabary + transliteration)
+            'Red Flags': 'ᎤᏍᎦᏃᎵᏙᏗ (usganolidodi)',  # Warning signs
+            'Your Rights': 'ᏣᏗᏱ ᎤᏂᎩᏍᏔᏂ (tsadiyi unigistani)',  # Your rights
+            'Action Items': 'ᏗᎦᎸᏫᏍᏓᏁᏗ (digalvwisdanedi)',  # Things to do
+            'Key Points': 'ᎤᎵᎮᎵᏍᏗ (ulihelisdi)',  # Important things
+            'Plain English Version': 'ᎣᏍᏓ ᎠᏕᎶᏆᏍᏗ (osda adeloquasdi)',  # Good explanation
+            # Document types
+            'Medical': 'ᏅᏩᏙᎯ (nvwadohi)',  # Medicine/healing
+            'Legal': 'ᏧᏓᎴᏅᏓ (tsudaleenvda)',  # Law
+            'Insurance': 'ᎠᎵᏍᎦᎳᏗᏍᏗ (alisgaladisdi)',  # Protection
+            'Financial': 'ᎠᏕᎳ (adela)',  # Money
+            'Government': 'ᎠᏂᏴᏫᏯ ᎠᏂᎬᎿᏬᏍᎩ (aniyvwiya anigenvwosgi)',  # People who govern
+            'General': 'ᏂᎦᏛᎢ (nigadvhi)',  # All
+        }
+
+        cherokee_concepts = {
+            'heart attack': 'ᎤᏂᎦ ᎠᎩᎵᎯᏍᏗ (uniga agilihisdi)',  # heart sickness
+            'high blood pressure': 'ᎩᎦ ᎤᏲ (giga uyo)',  # blood is bad/strong
+            'hospital': 'ᏅᏩᏙᎯᏙᏗ (nvwadohidodi)',  # healing place
+            'medicine': 'ᏅᏩᏙᎯ (nvwadohi)',
+            'doctor': 'ᏗᏬᏂᎯᏍᎩ (diwonihisgi)',  # one who heals
+            'money': 'ᎠᏕᎳ (adela)',
+            'help': 'ᎠᎵᏍᏗᏱᏗᏍᏗ (alisdiyidisdi)',  # helping
+            'rights': 'ᎤᏂᎩᏍᏔᏂ (unigistani)',
+            'danger': 'ᎤᏍᎦᏃᎵ (usganoliyo)',
+            'warning': 'ᎠᏍᎦᏃᏗ (asganodi)',
+            'family': 'ᏏᏓᏁᎸ (sidanelv)',
+            'food': 'ᎠᎵᏍᏓᏴᏗ (alisdayedi)',  # something to eat
+            'home': 'ᎨᏒᎢ (gesvi)',  # home/dwelling
+            'water': 'ᎠᎹ (ama)',
+            'children': 'ᏂᎬᏂ (nigvni)',  # the young ones
+        }
+
+        output = {
+            'language_name': 'ᏣᎳᎩ ᎦᏬᏂᎯᏍᏗ (Cherokee)',
+            'document_type': cherokee_terms.get(result.document_type.title(), result.document_type),
+            'disclaimer': (
+                "ᎯᎠ ᏓᎪᏪᎸᎢ: ᎯᎠ ᎣᏍᏓ ᎠᏕᎶᏆᏍᏗ ᎦᏬᏂᎯᏍᏗ ᎨᏒᎢ. "
+                "ᎥᏝ ᏧᏓᎴᏅᏓ ᎠᎵᏍᎪᎸᏗ ᎨᏒᎢ ᎤᏍᏗ, "
+                "ᎥᏝ ᏅᏩᏙᎯ ᎠᎵᏍᎪᎸᏗ ᎨᏒᎢ ᎤᏍᏗ. "
+                "ᎠᏎᏃ ᎾᏍᎩ ᏗᏤᎵ ᎠᎵᏍᏗᏱᏗ ᏥᏍᏕᎸᏗ."
+                # Translation: This is a clear-words document.
+                # It is not legal advice, it is not medical advice.
+                # Please find someone to help you.
+            ),
+            'section_headers': cherokee_terms,
+            'concepts': cherokee_concepts,
+        }
+        return output
+
     def save_translation(self, result: TranslationResult, output_name: str):
         """Save translation result as an HTML report"""
         output_dir = Path("translations")
@@ -851,7 +1025,9 @@ def _try_ollama_enhance(text: str, document_type: str) -> Optional[str]:
 
 
 def _print_result(result: TranslationResult, side_by_side: bool = False,
-                  spanish: bool = False, use_ollama: bool = False):
+                  spanish: bool = False, ojibwe: bool = False,
+                  navajo: bool = False, cherokee: bool = False,
+                  use_ollama: bool = False):
     """Print a full translation result to terminal."""
     translator = EnhancedPlainEnglishTranslator()
 
@@ -931,6 +1107,39 @@ def _print_result(result: TranslationResult, side_by_side: bool = False,
         print(f"⚠️  {spanish_info['disclaimer']}")
         print()
 
+    # Ojibwe output
+    if ojibwe:
+        ojibwe_info = translator.translate_to_ojibwe(result)
+        print(f"🪶 {ojibwe_info['language_name']}")
+        print(f"   Document Type: {ojibwe_info['document_type']}")
+        print(f"   ⚠️  {ojibwe_info['disclaimer']}")
+        print(f"   Key terms in Anishinaabemowin:")
+        for eng, oji in list(ojibwe_info['concepts'].items())[:8]:
+            print(f"      {eng} → {oji}")
+        print()
+
+    # Navajo output
+    if navajo:
+        navajo_info = translator.translate_to_navajo(result)
+        print(f"🪶 {navajo_info['language_name']}")
+        print(f"   Document Type: {navajo_info['document_type']}")
+        print(f"   ⚠️  {navajo_info['disclaimer']}")
+        print(f"   Key terms in Diné Bizaad:")
+        for eng, nav in list(navajo_info['concepts'].items())[:8]:
+            print(f"      {eng} → {nav}")
+        print()
+
+    # Cherokee output
+    if cherokee:
+        cherokee_info = translator.translate_to_cherokee(result)
+        print(f"🪶 {cherokee_info['language_name']}")
+        print(f"   Document Type: {cherokee_info['document_type']}")
+        print(f"   ⚠️  {cherokee_info['disclaimer']}")
+        print(f"   Key terms in ᏣᎳᎩ (Cherokee):")
+        for eng, chr_term in list(cherokee_info['concepts'].items())[:8]:
+            print(f"      {eng} → {chr_term}")
+        print()
+
     # Final disclaimer
     print("-" * 70)
     print(f"⚠️  {DISCLAIMER}")
@@ -948,6 +1157,12 @@ def main():
                         help='Show sentence-by-sentence original vs plain English')
     parser.add_argument('--spanish', '-es', action='store_true',
                         help='Include Spanish plain-language output')
+    parser.add_argument('--ojibwe', action='store_true',
+                        help='Include Ojibwe (Anishinaabemowin) plain-language output')
+    parser.add_argument('--navajo', action='store_true',
+                        help='Include Navajo (Diné Bizaad) plain-language output')
+    parser.add_argument('--cherokee', action='store_true',
+                        help='Include Cherokee (ᏣᎳᎩ) plain-language output')
     parser.add_argument('--ollama', action='store_true',
                         help='Use local Ollama LLM for enhanced translation')
     parser.add_argument('--json', action='store_true',
@@ -983,7 +1198,9 @@ def main():
 
         result = translator.translate_document(text)
         _print_result(result, side_by_side=args.side_by_side,
-                      spanish=args.spanish, use_ollama=args.ollama)
+                      spanish=args.spanish, ojibwe=args.ojibwe,
+                      navajo=args.navajo, cherokee=args.cherokee,
+                      use_ollama=args.ollama)
 
         if args.json:
             print("\n📄 JSON OUTPUT:")
@@ -1005,7 +1222,9 @@ def main():
             return
 
         _print_result(result, side_by_side=args.side_by_side,
-                      spanish=args.spanish, use_ollama=args.ollama)
+                      spanish=args.spanish, ojibwe=args.ojibwe,
+                      navajo=args.navajo, cherokee=args.cherokee,
+                      use_ollama=args.ollama)
 
         output_name = args.output or Path(args.file).stem
         translator.save_translation(result, output_name)

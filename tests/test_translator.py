@@ -416,6 +416,143 @@ class TestSpanishOutput:
         assert spanish['document_type'] == 'Médico'
 
 
+# --- Ojibwe Output ---
+
+class TestOjibweOutput:
+    def test_returns_dict(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert isinstance(ojibwe, dict)
+
+    def test_has_language_name(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert 'Anishinaabemowin' in ojibwe['language_name']
+
+    def test_has_disclaimer(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert 'disclaimer' in ojibwe
+        assert len(ojibwe['disclaimer']) > 20
+
+    def test_has_document_type(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert ojibwe['document_type'] == 'Mashkiki'  # Medicine
+
+    def test_has_concepts(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert 'concepts' in ojibwe
+        assert 'heart attack' in ojibwe['concepts']
+        assert 'water' in ojibwe['concepts']
+
+    def test_has_section_headers(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        ojibwe = translator.translate_to_ojibwe(result)
+        assert 'section_headers' in ojibwe
+        assert 'Your Rights' in ojibwe['section_headers']
+
+
+# --- Navajo Output ---
+
+class TestNavajoOutput:
+    def test_returns_dict(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert isinstance(navajo, dict)
+
+    def test_has_language_name(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert 'Diné Bizaad' in navajo['language_name']
+
+    def test_has_disclaimer(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert 'disclaimer' in navajo
+        assert len(navajo['disclaimer']) > 20
+
+    def test_has_document_type(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert navajo['document_type'] == "Azee'"  # Medicine
+
+    def test_has_concepts(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert 'concepts' in navajo
+        assert 'water' in navajo['concepts']
+        assert navajo['concepts']['water'] == 'tó'
+
+    def test_has_section_headers(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        navajo = translator.translate_to_navajo(result)
+        assert 'section_headers' in navajo
+        assert 'Government' in navajo['section_headers']
+
+
+# --- Cherokee Output ---
+
+class TestCherokeeOutput:
+    def test_returns_dict(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        assert isinstance(cherokee, dict)
+
+    def test_has_language_name(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        assert 'Cherokee' in cherokee['language_name']
+        assert 'ᏣᎳᎩ' in cherokee['language_name']
+
+    def test_has_disclaimer(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        assert 'disclaimer' in cherokee
+        assert len(cherokee['disclaimer']) > 20
+
+    def test_has_syllabary(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        # Check that Cherokee syllabary characters are present
+        assert 'ᏣᎳᎩ' in cherokee['language_name']
+        # Check concepts have syllabary
+        assert any('Ꭰ' in v or 'Ꮎ' in v or 'Ꮕ' in v
+                    for v in cherokee['concepts'].values())
+
+    def test_has_concepts(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        assert 'concepts' in cherokee
+        assert 'water' in cherokee['concepts']
+        assert 'ama' in cherokee['concepts']['water']
+
+    def test_has_section_headers(self, translator):
+        text = "Patient has hypertension. " * 5
+        result = translator.translate_document(text)
+        cherokee = translator.translate_to_cherokee(result)
+        assert 'section_headers' in cherokee
+        assert 'Medical' in cherokee['section_headers']
+
+
 # --- HTML Output ---
 
 class TestSaveTranslation:
@@ -503,6 +640,27 @@ class TestPrintResult:
         _print_result(result, spanish=True)
         captured = capsys.readouterr()
         assert 'AVISO' in captured.out
+
+    def test_prints_ojibwe(self, translator, capsys):
+        text = "Patient has hypertension and chronic conditions. " * 5
+        result = translator.translate_document(text)
+        _print_result(result, ojibwe=True)
+        captured = capsys.readouterr()
+        assert 'Anishinaabemowin' in captured.out
+
+    def test_prints_navajo(self, translator, capsys):
+        text = "Patient has hypertension and chronic conditions. " * 5
+        result = translator.translate_document(text)
+        _print_result(result, navajo=True)
+        captured = capsys.readouterr()
+        assert 'Diné Bizaad' in captured.out
+
+    def test_prints_cherokee(self, translator, capsys):
+        text = "Patient has hypertension and chronic conditions. " * 5
+        result = translator.translate_document(text)
+        _print_result(result, cherokee=True)
+        captured = capsys.readouterr()
+        assert 'ᏣᎳᎩ' in captured.out
 
 
 # --- CLI / Main ---
