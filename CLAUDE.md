@@ -13,13 +13,19 @@ Plain English Translator is a Python tool that converts complex medical, legal, 
 Plain-English-Translator/
 ├── translator.py              # Core module: EnhancedPlainEnglishTranslator class + CLI
 ├── batch_translate.py         # CLI tool for batch processing multiple documents
-├── setup.py                   # Package config (setuptools), entry points, dev deps
-├── requirements.txt           # Runtime Python dependencies
+├── setup.py                   # Package config (setuptools), entry points, extras
+├── requirements.txt           # Optional file-format dependencies (see below)
 ├── README.md                  # Project documentation and usage guide
 ├── CONTRIBUTING.md            # Contribution guidelines (terms, patterns, red flags)
+├── METHOD.md                  # Audit log: hypotheses tested, what was falsified, open unknowns
 ├── LICENSE                    # MIT License
-├── PDF_support.md             # Implementation reference/design document
+├── .flake8                    # Lint config (excludes legacy/)
 ├── .gitignore                 # Git ignore rules
+├── tests/
+│   └── test_translator.py     # Regression tests, incl. one per historical defect
+├── legacy/                    # Superseded files, kept as record — never imported
+│   ├── README.md              # Provenance notes for each archived file
+│   └── PDF_support.md         # Original draft source that translator.py came from
 ├── examples/
 │   ├── README.md              # Example documentation
 │   └── medical_example.py     # Sample medical discharge summary translation
@@ -27,6 +33,14 @@ Plain-English-Translator/
     ├── bug_report.md
     └── feature_request.md
 ```
+
+### The `legacy/` folder
+
+Superseded files are **moved here with `git mv`, not deleted** — precedence
+carries. When current code looks arbitrary, the reason is often in the
+ancestor. Every archived file gets a `legacy/README.md` entry recording what it
+was, what superseded it, why it was retired, and why it's still worth keeping.
+Nothing in `legacy/` is imported, executed, tested, or linted.
 
 ## Key Architecture
 
@@ -54,12 +68,16 @@ Plain-English-Translator/
 
 - `translate_document(text)` — Translate raw text string
 - `translate_document_from_file(file_path)` — Translate from a file (PDF/DOCX/TXT)
-- `save_translation(result, output_name)` — Save result as HTML to `translations/` directory
+- `save_translation(result, output_name)` — Save result as escaped HTML to the
+  `translations/` directory; returns the output `Path`
+
+Raises `ExtractionError` (module-level) when a document's text cannot be read.
 
 ## Development Setup
 
 ```bash
-# Python 3.7+ required
+# Python 3.7+ required. Core needs no dependencies;
+# this adds PDF and Word support.
 pip install -r requirements.txt
 
 # Dev dependencies
@@ -82,9 +100,18 @@ python examples/medical_example.py
 
 ## Dependencies
 
-**Runtime**: `requests`, `beautifulsoup4`, `pandas`, `PyPDF2`, `PyMuPDF`, `python-docx`, `openpyxl`
+**Core**: none. Translating `.txt` uses only the standard library.
 
-**Dev**: `pytest`, `black`, `flake8`, `pytest-cov`
+**Optional (`pip install -r requirements.txt`)**: `PyMuPDF`, `PyPDF2` (PDF),
+`python-docx` (Word). These are **imported lazily inside the extractor that
+needs them** — never at module top level. A missing package must degrade one
+file format, not break the tool. Do not move these to module-level imports.
+
+**Dev (`pip install -e ".[dev]"`)**: `pytest`, `black`, `flake8`, `pytest-cov`
+
+`requests`, `beautifulsoup4`, `pandas`, and `openpyxl` were removed in Aug 2026 —
+they were declared but never imported, and `requests` contradicted the
+local-only privacy guarantee.
 
 ## Code Conventions
 
@@ -98,12 +125,39 @@ python examples/medical_example.py
 
 ## Testing
 
-Tests should go in a `tests/` directory and be runnable via:
+Tests live in `tests/` and run via:
 
 ```bash
 pytest
 pytest --cov=translator
 ```
+
+`tests/test_translator.py::TestFalsifiedClaims` pins one test per defect found
+by running the tool. Each carries a docstring naming the claim that was believed
+true and the observation that disproved it. **Don't delete these as
+redundant** — they are the only thing keeping fixed bugs fixed.
+
+Two conventions worth keeping (rationale in `METHOD.md`):
+
+- After fixing a bug, **revert the fix and confirm the test fails.** A test that
+  has never failed proves nothing.
+- Prioritise **silent wrong answers over crashes.** The worst bug found in this
+  repo wasn't a traceback — it was `batch_translate.py` reporting
+  "✅ success, 70% confidence" over a report built from PDF binary internals.
+
+## Invariants
+
+Learned the hard way; breaking these reintroduces shipped bugs.
+
+1. **Optional imports stay lazy.** See Dependencies above.
+2. **Escape everything interpolated into HTML.** Source documents are untrusted
+   input — a real contract can contain `<script>`. `save_translation()` runs
+   every value through `html.escape`.
+3. **Extraction failures raise `ExtractionError`; they never return `""`.** An
+   empty string is indistinguishable from a genuinely empty document.
+4. **Batch and single-file paths share one extractor.** `batch_translate.py`
+   calls `translate_document_from_file()`. It must never `open()` a document
+   itself — that's how PDFs got read as raw bytes.
 
 ## Adding Content
 

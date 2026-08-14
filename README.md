@@ -30,10 +30,7 @@ This tool:
 ## ⚡ Quick Start
 
 ```bash
-# Install
-pip install -r requirements.txt
-
-# Translate a document
+# Translating a .txt document needs no dependencies at all
 python translator.py your-scary-document.txt
 
 # Get a beautiful HTML report
@@ -45,8 +42,19 @@ open translations/your-scary-document.html
 ```bash
 git clone https://github.com/JinnZ2/Plain-English-Translator.git
 cd Plain-English-Translator
+```
+
+That's it for plain text — the core tool uses only the Python standard library.
+
+To read **PDF and Word** documents, install the format extras:
+
+```bash
 pip install -r requirements.txt
 ```
+
+These are imported lazily, so a missing package disables that one file format
+instead of breaking the tool. If you try to open a PDF without them, you get an
+error telling you exactly what to install.
 
 ## 📖 Usage Examples
 
@@ -59,8 +67,16 @@ python translator.py medical-report.txt
 # Custom output name  
 python translator.py insurance-policy.pdf -o my-policy-explained
 
-# Process multiple files
+# Process multiple files — quoted pattern or an explicit list both work
+python batch_translate.py "documents/*.pdf"
 python batch_translate.py documents/*.pdf
+```
+
+### Running the tests
+
+```bash
+pip install -e ".[dev]"
+pytest
 ```
 
 ### Python API

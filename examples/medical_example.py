@@ -9,7 +9,7 @@ from pathlib import Path
 # Allow running from the examples/ directory or the project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from translator import PlainEnglishTranslator
+from translator import PlainEnglishTranslator  # noqa: E402  - needs sys.path set above
 
 # Sample medical text (anonymized)
 
@@ -66,7 +66,7 @@ def main():
 
     # Save detailed report
     translator.save_translation(result, "medical_discharge_example")
-    print(f"\n💾 Detailed report saved to: translations/medical_discharge_example.html")
+    print("\n💾 Detailed report saved to: translations/medical_discharge_example.html")
 
     print("\n" + "=" * 80)
     print("PLAIN ENGLISH VERSION:")
