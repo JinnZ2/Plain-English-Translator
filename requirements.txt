@@ -1,7 +1,17 @@
-requests>=2.25.1
-beautifulsoup4>=4.9.3
-pandas>=1.3.0
-PyPDF2>=2.0.0
+# Plain English Translator — dependencies
+#
+# Translating .txt documents needs NOTHING beyond the Python standard library.
+# Everything below is only required to read other file formats, and is imported
+# lazily, so a missing package degrades that one format instead of breaking the
+# whole tool.
+
+# PDF support (translator.py tries PyMuPDF first, falls back to PyPDF2)
 PyMuPDF>=1.20.0
+PyPDF2>=2.0.0
+
+# Word .docx support
 python-docx>=0.8.11
-openpyxl>=3.0.7
+
+# Removed 2026-08: requests, beautifulsoup4, pandas, openpyxl.
+# None were imported anywhere in the codebase. `requests` in particular
+# contradicted the project's local-only privacy guarantee.

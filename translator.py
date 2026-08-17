@@ -4,8 +4,7 @@ Enhanced Plain English Translator with PDF support and expanded legal/insurance 
 Now handles PDFs directly and catches more sneaky clauses!
 """
 
-import PyPDF2
-import fitz  # PyMuPDF - better PDF extraction
+import html
 import re
 import sys
 import argparse
@@ -13,7 +12,28 @@ import json
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 from pathlib import Path
-from docx import Document  # Word document support
+
+# PDF and DOCX support are optional. Plain .txt documents — the most common
+# case — must work on a bare Python install, so these are imported lazily by
+# the extractors that need them rather than at module load.
+
+
+class ExtractionError(Exception):
+    """Raised when a document's text cannot be read.
+
+    Extraction failures are raised rather than returned as empty strings so a
+    caller can never mistake an unreadable document for an empty one.
+    """
+
+
+def _import_pymupdf():
+    """Import PyMuPDF, preferring the modern name over the deprecated `fitz`."""
+    try:
+        import pymupdf
+        return pymupdf
+    except ImportError:
+        import fitz  # noqa: F401  - pre-1.24 PyMuPDF only exposes `fitz`
+        return fitz
 
 DISCLAIMER = (
     "DISCLAIMER: This is an automated translation tool. It is NOT legal, medical, "
@@ -33,10 +53,6 @@ class TranslationResult:
     confidence_score: float
     document_type: str
     source_file: str
-
-
-# Keep the old name as an alias so existing imports work
-PlainEnglishTranslator = None  # defined after class
 
 
 class EnhancedPlainEnglishTranslator:
@@ -330,10 +346,12 @@ class EnhancedPlainEnglishTranslator:
     def extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text from PDF using multiple methods for best results"""
         text = ""
+        attempts = []
 
         try:
             # Try PyMuPDF first (better for complex layouts)
-            doc = fitz.open(file_path)
+            pymupdf = _import_pymupdf()
+            doc = pymupdf.open(file_path)
             for page in doc:
                 text += page.get_text()
             doc.close()
@@ -342,33 +360,49 @@ class EnhancedPlainEnglishTranslator:
             if len(text.strip()) > 100:
                 return text
 
+        except ImportError:
+            attempts.append("PyMuPDF is not installed")
         except Exception as e:
-            print(f"PyMuPDF failed: {e}, trying PyPDF2...")
+            attempts.append(f"PyMuPDF failed: {e}")
 
         try:
             # Fallback to PyPDF2
+            import PyPDF2
+
             with open(file_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
                 for page in pdf_reader.pages:
                     text += page.extract_text()
 
+        except ImportError:
+            attempts.append("PyPDF2 is not installed")
         except Exception as e:
-            print(f"PyPDF2 also failed: {e}")
-            return ""
+            attempts.append(f"PyPDF2 failed: {e}")
+
+        if not text.strip():
+            raise ExtractionError(
+                f"Could not extract any text from {file_path}. "
+                + "; ".join(attempts)
+                + ". Install PDF support with: pip install PyMuPDF PyPDF2"
+            )
 
         return text
 
     def extract_text_from_docx(self, file_path: str) -> str:
         """Extract text from Word documents"""
         try:
+            from docx import Document
+        except ImportError:
+            raise ExtractionError(
+                "Reading .docx files needs python-docx. "
+                "Install it with: pip install python-docx"
+            )
+
+        try:
             doc = Document(file_path)
-            text = ""
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-            return text
+            return "\n".join(paragraph.text for paragraph in doc.paragraphs)
         except Exception as e:
-            print(f"Error reading Word document: {e}")
-            return ""
+            raise ExtractionError(f"Error reading Word document {file_path}: {e}")
 
     def extract_text_from_file(self, file_path: str) -> str:
         """Extract text from various file types"""
@@ -920,19 +954,25 @@ class EnhancedPlainEnglishTranslator:
         }
         return output
 
-    def save_translation(self, result: TranslationResult, output_name: str):
-        """Save translation result as an HTML report"""
+    def save_translation(self, result: TranslationResult, output_name: str) -> Path:
+        """Save translation result as an HTML report and return its path"""
         output_dir = Path("translations")
         output_dir.mkdir(exist_ok=True)
 
-        html = f"""<!DOCTYPE html>
+        # Document text is untrusted input — a contract or discharge summary can
+        # contain anything, including markup. Escape every interpolated value so
+        # the report renders the document rather than executing it.
+        esc = html.escape
+
+        page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Translation: {output_name}</title>
+    <title>Translation: {esc(str(output_name))}</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }}
         h1 {{ color: #2c3e50; }}
         .section {{ margin: 20px 0; padding: 15px; border-radius: 8px; }}
         .red-flags {{ background: #ffeaea; border-left: 4px solid #e74c3c; }}
@@ -947,35 +987,27 @@ class EnhancedPlainEnglishTranslator:
 </head>
 <body>
     <h1>Plain English Translation</h1>
-    <p class="confidence">Document Type: {result.document_type.title()} | Confidence: {result.confidence_score:.0%}</p>
+    <p class="confidence">Document Type: {esc(result.document_type.title())}
+       | Confidence: {result.confidence_score:.0%}</p>
 """
 
-        if result.red_flags:
-            html += '    <div class="section red-flags"><h2>Red Flags</h2><ul>\n'
-            for flag in result.red_flags:
-                html += f"        <li>{flag}</li>\n"
-            html += "    </ul></div>\n"
+        sections = [
+            ("red-flags", "Red Flags", result.red_flags),
+            ("rights", "Your Rights", result.your_rights),
+            ("actions", "Action Items", result.action_items),
+            ("key-points", "Key Points", result.key_points),
+        ]
 
-        if result.your_rights:
-            html += '    <div class="section rights"><h2>Your Rights</h2><ul>\n'
-            for right in result.your_rights:
-                html += f"        <li>{right}</li>\n"
-            html += "    </ul></div>\n"
+        for css_class, heading, items in sections:
+            if not items:
+                continue
+            page += f'    <div class="section {css_class}"><h2>{heading}</h2><ul>\n'
+            for item in items:
+                page += f"        <li>{esc(item)}</li>\n"
+            page += "    </ul></div>\n"
 
-        if result.action_items:
-            html += '    <div class="section actions"><h2>Action Items</h2><ul>\n'
-            for action in result.action_items:
-                html += f"        <li>{action}</li>\n"
-            html += "    </ul></div>\n"
-
-        if result.key_points:
-            html += '    <div class="section key-points"><h2>Key Points</h2><ul>\n'
-            for point in result.key_points:
-                html += f"        <li>{point}</li>\n"
-            html += "    </ul></div>\n"
-
-        html += f"""    <h2>Plain English Version</h2>
-    <div class="plain-english">{result.plain_english}</div>
+        page += f"""    <h2>Plain English Version</h2>
+    <div class="plain-english">{esc(result.plain_english)}</div>
 
     <hr>
     <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin-top: 20px;">
@@ -987,7 +1019,9 @@ class EnhancedPlainEnglishTranslator:
 
         output_path = output_dir / f"{output_name}.html"
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html)
+            f.write(page)
+
+        return output_path
 
 
 # Alias so `from translator import PlainEnglishTranslator` works

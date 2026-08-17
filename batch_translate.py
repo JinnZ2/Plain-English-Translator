@@ -14,16 +14,12 @@ from translator import PlainEnglishTranslator
 def process_file(translator, file_path):
     """Process a single file"""
     try:
-        # Read the file
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-
-        if len(content.strip()) < 50:
-            print(f"⚠️  Skipping {file_path} - too short")
-            return False
-
-        # Translate
-        result = translator.translate_document(content)
+        # Route through the same extractor the single-file CLI uses, so PDFs and
+        # Word documents are decoded rather than read as raw bytes. Reading a
+        # .pdf with open(..., 'r', errors='ignore') silently yields the file's
+        # binary internals, which then "translate" into a confident-looking
+        # report containing no document text at all.
+        result = translator.translate_document_from_file(file_path)
 
         # Save with original filename
         output_name = Path(file_path).stem
@@ -48,17 +44,29 @@ def process_file(translator, file_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Batch translate multiple documents')
-    parser.add_argument('pattern', help='File pattern (e.g., "documents/*.txt" or "*.pdf")')
+    parser.add_argument(
+        'pattern',
+        nargs='+',
+        help='File pattern (e.g., "documents/*.txt") or an explicit list of files. '
+             'Accepts both, so an unquoted pattern the shell already expanded still works.',
+    )
     parser.add_argument('--delay', '-d', type=float, default=0.5, help='Delay between files (seconds)')
     parser.add_argument('--max-files', '-m', type=int, help='Maximum number of files to process')
 
     args = parser.parse_args()
 
-    # Find all matching files
-    files = glob.glob(args.pattern)
+    # Expand each argument as a glob, keeping literal paths that match nothing
+    # in the glob sense but exist on disk. Duplicates are dropped while
+    # preserving the order given.
+    files = []
+    for pattern in args.pattern:
+        matches = sorted(glob.glob(pattern)) or ([pattern] if Path(pattern).is_file() else [])
+        for match in matches:
+            if match not in files:
+                files.append(match)
 
     if not files:
-        print(f"No files found matching pattern: {args.pattern}")
+        print(f"No files found matching: {' '.join(args.pattern)}")
         return
 
     if args.max_files:
@@ -87,18 +95,18 @@ def main():
     # Summary
     elapsed = time.time() - start_time
     print("\n" + "=" * 60)
-    print(f"✅ Batch processing complete!")
+    print("✅ Batch processing complete!")
     print(f"   📊 {success_count}/{len(files)} files processed successfully")
     print(f"   ⏱️  Total time: {elapsed:.1f} seconds")
-    print(f"   📁 Results in: translations/ folder")
+    print("   📁 Results in: translations/ folder")
 
     # Show some stats
     if success_count > 0:
-        print(f"\n🎯 Quick tips:")
-        print(f"   • Open HTML files in your browser for best viewing")
-        print(f"   • Look for red flags (⚠️) first - those need attention")
-        print(f"   • Check confidence scores - <70% may need human review")
-        print(f"   • Action items (📋) tell you what to do next")
+        print("\n🎯 Quick tips:")
+        print("   • Open HTML files in your browser for best viewing")
+        print("   • Look for red flags (⚠️) first - those need attention")
+        print("   • Check confidence scores - <70% may need human review")
+        print("   • Action items (📋) tell you what to do next")
 
 
 if __name__ == "__main__":

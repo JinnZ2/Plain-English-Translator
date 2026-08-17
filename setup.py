@@ -3,8 +3,13 @@ from setuptools import setup
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+# Reading .txt documents requires only the standard library, so the base
+# install pulls in nothing. File-format support is opt-in via extras.
+DOCUMENT_REQUIREMENTS = [
+    "PyMuPDF>=1.20.0",
+    "PyPDF2>=2.0.0",
+    "python-docx>=0.8.11",
+]
 
 setup(
     name="plain-english-translator",
@@ -41,9 +46,11 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
-    install_requires=requirements,
+    install_requires=[],
     extras_require={
-        "dev": [
+        # pip install "plain-english-translator[documents]"
+        "documents": DOCUMENT_REQUIREMENTS,
+        "dev": DOCUMENT_REQUIREMENTS + [
             "pytest>=6.0",
             "black>=21.0",
             "flake8>=3.8",

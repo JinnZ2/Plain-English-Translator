@@ -1,0 +1,14 @@
+[flake8]
+max-line-length = 120
+# legacy/ holds superseded files kept as historical record. They are never
+# imported or executed, and several are known-mangled by design — see
+# legacy/README.md. Linting them would only produce noise.
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    legacy,
+    translations,
+    .venv,
+    venv
