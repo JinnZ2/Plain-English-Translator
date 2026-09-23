@@ -5,7 +5,7 @@
 Stop getting screwed over by documents you can’t understand. This tool translates medical records, insurance policies, legal contracts, and financial documents into plain English - plus tells you what you should actually *do* about it.
 
 ![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-CC0_1.0-lightgrey.svg)
 ![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
 
 ## 🚀 Why This Matters
@@ -198,7 +198,7 @@ Have a document that got translated well (or poorly)? Add it to `/examples` with
 
 ## 📄 License
 
-MIT License - Use it, modify it, share it. Let’s democratize understanding together.
+CC0 1.0 Universal - Use it, modify it, share it. Let’s democratize understanding together.
 
 ## 🙏 Acknowledgments
 
